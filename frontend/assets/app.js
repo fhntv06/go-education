@@ -1,4 +1,6 @@
-import { FormController } from './javascripts'
+import './app.css'; // Импортируем стили
+
+import { FormController, PopupController } from './javascripts'
 
 class App {
   constructor() {
@@ -7,6 +9,7 @@ class App {
   init = () => {
     // init classes
     new FormController()
+    new PopupController()
   }
 }
 

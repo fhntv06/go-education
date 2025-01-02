@@ -9,7 +9,7 @@ export class FormController {
 
     // execute methods
     this.addListeners()
-    this.checkedAllFieldsFilled()
+    // this.checkedAllFieldsFilled()
   }
   addListeners = () => {
     this.form.addEventListener('submit', this.submit)
@@ -65,7 +65,7 @@ export class FormController {
         case 'username':
           if (field.value.length  === 0) {
             parent.classList.add('error')
-            return { id: field.id, text: `Некорректные данные. Проверьте поле ${field.name}` }
+            // return { id: field.id, text: `Некорректные данные. Проверьте поле ${field.name}` }
           }
           break
         case 'email':
@@ -91,28 +91,45 @@ export class FormController {
   showNotification = (messages = []) => {
     messages.forEach((message) => {
       if (message) {
-        document.getElementById(message.id).insertAdjacentHTML('afterend', `<span class="error">${message.text}</span>`)
+        const field = document.getElementById(message.id)
+
+        field.parentElement.classList.add('error')
+        field.insertAdjacentHTML('afterend', `<span class="error">${message.text}</span>`)
       }
     })
+  }
+  executePopup = (detail) => {
+    // Вызвать глобальное событие для открытия попапа
+    window.dispatchEvent(new CustomEvent('showPopup', { detail }))
   }
   submit = (event) => {
     event.preventDefault()
     const { action, method } = this.form
     const fields = this.fields
-    const errors = this.validation(fields)
+    const errors = [] // this.validation(fields)
 
-    if (errors.length) {
-      this.showNotification(errors)
-    } else {
+    if (errors.length) this.showNotification(errors)
+    else {
       fetch(action, {
-        method: method || 'GET'
+        method: method || 'GET',
+        body: new FormData(this.form)
       })
-        .then((res) => {
-          console.error('Res from form: ' + res)
+        .then(async (res) => {
+          const { id, text, type } = await res.json()
 
-          this.button.setAttribute('disabled', this.disabledSubmit)
+          switch (type) {
+            case 'success':
+              this.button.disabled = true
 
-          this.clearValues(fields)
+              this.clearValues(fields)
+              this.clearErrors(fields)
+
+              this.executePopup({ message: text, type } )
+              break;
+            case 'error':
+              this.showNotification([{ id, text }])
+              this.executePopup({ message: text, type } )
+          }
         })
         .catch((error) => {
           console.error('Error in form: ' + error)
