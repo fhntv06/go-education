@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  min-width: 100vw;
+  min-height: 100vh;
+  color: white;
+  background-color: aliceblue;
+}
+h1,h2,h3,h4,h5,h6,p,span {
+  font-family: Arial, serif;
+  line-height: 1.5;
+}
+h1 {
+  font-size: 48px;
+}
+h2 {
+  font-size: 32px;
+}
+p {
+  font-size: 24px;
+}
+button {
+  background-color: unset;
+  border: none;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 20px;
+}

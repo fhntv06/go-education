@@ -1,0 +1,113 @@
+.form-container {
+  display: flex;
+  flex-direction: column;
+}
+.form-container h2,
+.form-container p {
+  color: black;
+}
+.form-container h2 {
+  margin-bottom: 12px;
+}
+form {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  row-gap: 12px;
+  width: max-content;
+}
+label {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+label span:not(.error) {
+  color: black;
+  margin-right: 12px;
+}
+label .error {
+  position: absolute;
+  top: 0;
+  right: -12px;
+  font-size: 12px;
+  color: #f00;
+  transform: translateX(100%);
+}
+input {
+  width: 200px;
+  height: 40px;
+  padding: 8px;
+  border: 1px solid #76cdde;
+  border-radius: 10px;
+  font-size: 20px;
+  outline-color: #76cdde;
+  outline-offset: 1px;
+  box-shadow: inset 0 0 5px 0 transparent;
+  transition:
+    box-shadow .4s ease-out,
+    outline-color .5s ease-out;
+}
+input:focus-visible,
+input:hover,
+input:active,
+input:focus {
+  outline-color: #498d99;
+  box-shadow: inset 0 0 5px 0 #76cdde;
+}
+
+input,
+button[type="submit"] {
+  outline-offset: 1px;
+  outline-color: #76cdde;
+}
+button[type="submit"] {
+  min-width: 230px;
+  max-width: 230px;
+  background-color: #76cdde;
+  cursor: pointer;
+  transition:
+    box-shadow .1s ease-out,
+    background-color .3s ease-out,
+    transform .1s ease-out;
+}
+button[type="submit"] span {
+  font-size: inherit;
+  color: white;
+  transition: color .3s ease-out;
+}
+button[type="submit"]:disabled {
+  background-color: #8ab3bb;
+  cursor: default;
+  transition: background-color .5s ease-out;
+}
+button[type="submit"]:disabled span {
+  color: #d7d7d7;
+  transition: color .5s ease-out;
+}
+
+button[type="submit"]:hover:not(:disabled),
+button[type="submit"]:active:not(:disabled),
+button[type="submit"]:focus:not(:disabled) {
+  transform: scale(.97);
+}
+
+button[type="submit"]:active:not(:disabled),
+button[type="submit"]:focus:not(:disabled) {
+  transform: scale(.95) rotateX(25deg);
+  box-shadow: inset 0 -3px 3px 0 #629da8;
+  transition:
+      box-shadow .1s ease-in,
+      transform .1s ease-in;
+}
+button[type="submit"]:hover:not(:disabled) span,
+button[type="submit"]:active:not(:disabled) span,
+button[type="submit"]:focus:not(:disabled) span {
+  font-size: 98%;
+  transition: font-size .1s ease-in;
+}
+
+/* error */
+ label.error input {
+   border-color: #F44336;
+   outline-color: #F44336;
+ }

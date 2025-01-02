@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+
+    <link rel="stylesheet" href="./assets/app.css">
+    <script type="module" src="./assets/app.js"></script>
+</head>
+<body>
+
+<div class="wrapper">
+    <header class="padding-container">
+        <div class="mask"></div>
+        <h1>Путь в Go разработчики!</h1>
+    </header>
+    <div class="form-container container padding-container">
+        <h2>Форма регистрации</h2>
+        <form id="form-register" action="/register" method="POST">
+            <label for="username">
+                <span>Имя пользователя:</span>
+                <input type="text" id="username" name="username" value="kartem" required>
+            </label>
+            <label for="email">
+                <span>Электронная почта:</span>
+                <input type="email" id="email" name="email" value="kartem@kartech.com" required>
+            </label>
+            <label for="password">
+                <span>Пароль:</span>
+                <input type="password" id="password" name="password" value="123" required>
+            </label>
+            <label for="confirm_password">
+                <span>Подтвердите пароль:</span>
+                <input type="password" id="confirm_password" value="123" name="confirm_password" required>
+            </label>
+            <button type="submit" disabled>
+                <span>Зарегистрироваться</span>
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
