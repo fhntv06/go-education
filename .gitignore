@@ -1,5 +1,6 @@
 frontend/build/
 frontend/node_modules/
 frontend/package-lock.json
-.idea/
 backend/log.txt
+.idea/
+log.txt

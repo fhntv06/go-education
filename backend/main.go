@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type User struct {
@@ -41,9 +42,15 @@ func loggingCreateUser(user User) {
 
 	*/
 	// Формируем строку для записи в лог-файл
-	var userLog = fmt.Sprintf(
-		"--> Создан новый пользователь:\n\tUsername: %s,\n\tEmail: %s,\n\tPassword: %s\n--------------------------\n",
-		user.Username, user.Email, user.Password,
+
+	// Получаем текущее время
+	now := time.Now()
+
+	// Форматируем время в нужный формат
+	timeStr := fmt.Sprintf("%s %s", now.Format("15:04:05"), now.Format("02-01-2006"))
+	userLog := fmt.Sprintf(
+		"--> Создан новый пользователь:\n\tDate: %s,\n\tUsername: %s,\n\tEmail: %s,\n\tPassword: %s\n--------------------------\n",
+		timeStr, user.Username, user.Email, user.Password,
 	)
 
 	// Получаем текущую рабочую директорию (проекта)
