@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -91,37 +92,74 @@ func getContentTypeByExtension(filePath string) string {
 		return "application/octet-stream"
 	}
 }
+func CreateBook(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	title := vars["title"]
+
+	successResponse := &ErrorResponse{Text: "Creating Book with " + title + "!", Type: "success"}
+	sendJSONResponse(w, successResponse, http.StatusCreated)
+	//fmt.Fprintf(w, "Creating Book")
+}
+func ReadBook(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	title := vars["title"]
+
+	fmt.Fprintf(w, "ReadBook Book is %s", title)
+}
+func UpdateBook(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "UpdateBook Book")
+}
+func DeleteBook(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "DeleteBook Book")
+}
+
+func builderPathStaticFileHandler(dirName string) http.Handler {
+	return http.StripPrefix(
+		"/"+dirName+"/",
+		http.FileServer(http.Dir(filepath.Join(".", "frontend", dirName))),
+	)
+}
 
 func main() {
 	// Обработчики маршрутов
+	r := mux.NewRouter()
 
-	// Обрабатываем статику из папки 'frontend'
-	fs := http.FileServer(http.Dir("frontend"))
-	http.Handle("/", fs) // теперь root смотрит в папку frontend
-
-	// Перехватываем запросы и добавляем правильные заголовки Content-Type
-	http.HandleFunc("/assets/javascripts", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("assets/javascripts")
-		// Определяем Content-Type по расширению файла
-		w.Header().Set("Content-Type", "application/javascript")
-
-		// Отдаем файл
-		fs.ServeHTTP(w, r)
-	})
-	http.HandleFunc("/assets/javascripts/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("assets/javascripts/")
-		// Определяем Content-Type по расширению файла
-		w.Header().Set("Content-Type", "application/javascript")
-
-		// Отдаем файл
-		fs.ServeHTTP(w, r)
+	// Обработчик для корня сайта
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(".", "frontend", "index.html")) // конкатенация с учетом OS
 	})
 
-	http.HandleFunc("/register", handleRegistration) // Обработка формы регистрации
+	// Маршрут для статических файлов из папки frontend/build
+	r.PathPrefix("/build/").Handler(builderPathStaticFileHandler("build"))
+	// Маршрут для статических файлов из папки frontend/assets
+	r.PathPrefix("/assets/").Handler(builderPathStaticFileHandler("assets"))
+
+	// Разграничение по методам
+	r.HandleFunc("/books/{title}", CreateBook).Methods("POST")
+	r.HandleFunc("/books/{title}", ReadBook).Methods("GET")
+	r.HandleFunc("/books/{title}", UpdateBook).Methods("PUT")
+	r.HandleFunc("/books/{title}", DeleteBook).Methods("DELETE")
+
+	// Обработка запроса по slug'ам
+	r.HandleFunc("/books/{title}/page/{page}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "R: %s", r)
+
+		vars := mux.Vars(r)
+		title := vars["title"]
+		page := vars["page"]
+
+		fmt.Fprintf(w, "You've requested the book: %s on page %s\n", title, page)
+	})
+
+	r.HandleFunc("/register", handleRegistration) // Обработка формы регистрации
 
 	// Запуск сервера на порту 8080
 	fmt.Println("Запуск сервера на http://localhost:80")
-	if err := http.ListenAndServe(":80", nil); err != nil {
+	if err := http.ListenAndServe(":80", r); err != nil {
 		fmt.Println("Ошибка при запуске сервера:", err)
 	}
 }
+
+// моменты
+// http позволило просто сделать роутинг и легко работает frontend со своими файлами, благодаря обработки рута из папки frontend
+// gorilla/mux позволило испольловать в роутинге slug но отвалилать статика хотя рут смотрит в frontend
