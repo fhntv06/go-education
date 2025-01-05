@@ -1,0 +1,10 @@
+--> Создан новый пользователь:
+	Username: kartem,
+	Email: kartem@kartech.com,
+	Password: 123321
+--------------------------
+--> Создан новый пользователь:
+	Username: k6art5@proton.me,
+	Email: fhntv1357246@mail.ru,
+	Password: 123123
+--------------------------

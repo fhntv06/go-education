@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -26,6 +28,44 @@ func sendJSONResponse(w http.ResponseWriter, response *ErrorResponse, statusCode
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
+}
+
+func loggingCreateUser(user User) {
+	// Открываем файл для дозаписи (если файл не существует, он будет создан)
+	/*
+
+		Используется функция os.OpenFile с флагами:
+		os.O_APPEND: открывает файл для добавления данных в конец;
+		os.O_CREATE: создает файл, если он еще не существует;
+		os.O_WRONLY: открывает файл только для записи.
+
+	*/
+	// Формируем строку для записи в лог-файл
+	var userLog = fmt.Sprintf(
+		"--> Создан новый пользователь:\n\tUsername: %s,\n\tEmail: %s,\n\tPassword: %s\n--------------------------\n",
+		user.Username, user.Email, user.Password,
+	)
+
+	// Получаем текущую рабочую директорию (проекта)
+	currentDir, err := os.Getwd()
+
+	// Формируем полный путь до файла лога
+	logPath := filepath.Join(currentDir, "log.txt")
+
+	// Открываем файл для записи (или создаем новый, если его нет) и добавляем данные в конец
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatalf("Не удалось открыть файл: %v", err)
+	}
+	defer file.Close()
+
+	// Записываем сформированную строку в файл
+	_, err = file.WriteString(userLog)
+	if err != nil {
+		log.Fatalf("Не удалось записать данные в файл: %v", err)
+	}
+
+	fmt.Println("Добавлен новый пользователь!")
 }
 
 func handleRegistration(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +109,9 @@ func handleRegistration(w http.ResponseWriter, r *http.Request) {
 			Email:    email,
 			Password: password, // В реальном приложении следует хранить только хэш пароля
 		}
+
+		// логирование новых пользователей
+		loggingCreateUser(user)
 
 		// Выводим сообщение об успешной регистрации
 		successResponse := &ErrorResponse{Text: "Пользователь " + user.Username + " зарегистрирован!", Type: "success"}
