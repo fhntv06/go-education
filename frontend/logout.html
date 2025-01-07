@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выход</title>
+
+    <!--  For Test  -->
+<!--    <script type="module" src="assets/app.js"></script>-->
+<!--    <link rel="stylesheet" href="assets/app.css">-->
+
+    <script type="module" src="build/build.js" defer></script>
+</head>
+<body>
+    <div id="wrapper" class="logout-page wrapper">
+        <div class="form-container container padding-container">
+            <h2>
+                Вы вышли из аккаунта!
+                <br>
+                <hr>
+                <br>
+                <span id="prefix-text">Перенаправитесь на <a href="/">главную страницу</a> через</span>
+                <span id="timer"></span>!
+            </h2>
+        </div>
+    </div>
+
+    <script>
+        const
+            wrapper = document.getElementById('wrapper'),
+            prefixText = document.getElementById('prefix-text'),
+            spanTimer = document.getElementById('timer'),
+            classHidden = 'hidden'
+
+        let pause = 5 // seconds
+
+        spanTimer.textContent = pause.toString()
+
+        const timer = setInterval(() => {
+            pause--
+
+            const isRedirect = pause === 0
+
+            if (isRedirect) {
+              clearInterval(timer)
+              prefixText.textContent = 'Перенаправление'
+              wrapper.classList.add(classHidden)
+
+              setTimeout(() => {
+                window.location = '/'
+              }, 1000)
+            }
+
+            spanTimer.textContent = (!isRedirect) ? pause.toString() : ''
+        }, 1000)
+    </script>
+</body>
+</html>
