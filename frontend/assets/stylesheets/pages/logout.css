@@ -1,0 +1,6 @@
+.logout-page {
+  transition: opacity 1s ease-in;
+}
+.logout-page.hidden {
+  opacity: 0;
+}

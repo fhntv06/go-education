@@ -1,0 +1,14 @@
+.account-page__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.account-page__main {
+  padding: 24px;
+  background-color: #498d99;
+  border-radius: 20px;
+  border: 1px solid #000;
+  box-shadow:
+    0 0 0 2px #f0f8ff,
+    0 0 0 5px #498d99
+}
