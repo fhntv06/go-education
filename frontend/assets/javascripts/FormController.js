@@ -1,15 +1,16 @@
 export class FormController {
-  constructor() {
+  constructor(element) {
+    this.form = element
+
     this.init()
   }
   init = () => {
-    this.form = document.getElementById('form-register')
     this.fields = Array.from(this.form.querySelectorAll('input'))
     this.button = this.form.querySelector('[type="submit"]')
 
     // execute methods
     this.addListeners()
-    // this.checkedAllFieldsFilled()
+    this.checkedAllFieldsFilled()
   }
   addListeners = () => {
     this.form.addEventListener('submit', this.submit)
