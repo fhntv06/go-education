@@ -1,5 +1,12 @@
+/* COMMON */
 @import url('stylesheets/common.css');
+@import url('stylesheets/button.css');
+@import url('stylesheets/header.css');
+
+/* BLOCKS */
 @import url('stylesheets/container.css');
 @import url('stylesheets/form-container.css');
-@import url('stylesheets/header.css');
 @import url('stylesheets/popup.css');
+
+/* PAGES */
+@import url('stylesheets/pages/index.css');

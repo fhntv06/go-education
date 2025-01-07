@@ -63,7 +63,6 @@ button[type="submit"] {
 button[type="submit"] {
   min-width: 230px;
   max-width: 230px;
-  background-color: #76cdde;
   cursor: pointer;
   transition:
     box-shadow .1s ease-out,
@@ -75,22 +74,10 @@ button[type="submit"] span {
   color: white;
   transition: color .3s ease-out;
 }
-button[type="submit"]:disabled {
-  background-color: #8ab3bb;
-  cursor: default;
-  transition: background-color .5s ease-out;
-}
 button[type="submit"]:disabled span {
   color: #d7d7d7;
   transition: color .5s ease-out;
 }
-
-button[type="submit"]:hover:not(:disabled),
-button[type="submit"]:active:not(:disabled),
-button[type="submit"]:focus:not(:disabled) {
-  transform: scale(.97);
-}
-
 button[type="submit"]:active:not(:disabled),
 button[type="submit"]:focus:not(:disabled) {
   transform: scale(.95) rotateX(25deg);
@@ -107,7 +94,11 @@ button[type="submit"]:focus:not(:disabled) span {
 }
 
 /* error */
- label.error input {
-   border-color: #F44336;
-   outline-color: #F44336;
- }
+label.error input {
+  border-color: #F44336;
+  outline-color: #F44336;
+}
+
+@media (max-width: 576px) {
+  flex-direction: column;
+}
