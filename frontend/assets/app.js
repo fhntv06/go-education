@@ -1,4 +1,4 @@
-// import './app.css'; // Импортируем стили
+import './app.css' // Импортируем стили
 
 import { FormController, PopupController } from './javascripts'
 
