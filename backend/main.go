@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
+	_ "github.com/gorilla/sessions"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +25,12 @@ type ErrorResponse struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
 }
+
+var (
+	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
+	key   = []byte("super-secret-key")
+	store = sessions.NewCookieStore(key)
+)
 
 // Функция для отправки JSON-ответа с ошибкой
 func sendJSONResponse(w http.ResponseWriter, response *ErrorResponse, statusCode int) {
@@ -162,12 +170,47 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "DeleteBook Book")
 }
-
 func builderPathStaticFileHandler(dirName string) http.Handler {
 	return http.StripPrefix(
 		"/"+dirName+"/",
 		http.FileServer(http.Dir(filepath.Join(".", "frontend", dirName))),
 	)
+}
+func accountHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+
+	// Check if user is authenticated
+	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		w.WriteHeader(http.StatusForbidden)
+		http.ServeFile(w, r, filepath.Join("..", "frontend", "forbidden.html")) // конкатенация с учетом OS
+	} else {
+		fmt.Println("User is logged in!")
+		http.ServeFile(w, r, filepath.Join("..", "frontend", "account.html")) // конкатенация с учетом OS
+	}
+}
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+
+	// Authentication goes here
+	// ...
+	fmt.Println("Authentication is true! Is logged in!")
+
+	// Set user as authenticated
+	session.Values["authenticated"] = true
+	session.Save(r, w)
+
+	http.ServeFile(w, r, filepath.Join("..", "frontend", "login.html")) // конкатенация с учетом OS
+}
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+
+	fmt.Println("Authentication is false! Is logout!")
+
+	// Revoke users authentication
+	session.Values["authenticated"] = false
+	session.Save(r, w)
+
+	http.ServeFile(w, r, filepath.Join("..", "frontend", "logout.html")) // конкатенация с учетом OS
 }
 
 func main() {
@@ -176,7 +219,7 @@ func main() {
 
 	// Обработчик для корня сайта
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(".", "frontend", "index.html")) // конкатенация с учетом OS
+		http.ServeFile(w, r, filepath.Join("..", "frontend", "index.html")) // конкатенация с учетом OS
 	})
 
 	// Маршрут для статических файлов из папки frontend/build
@@ -202,6 +245,9 @@ func main() {
 	})
 
 	r.HandleFunc("/register", handleRegistration) // Обработка формы регистрации
+	r.HandleFunc("/account", accountHandler)      // Обработка перехода на страницу account
+	r.HandleFunc("/login", loginHandler)          // Обработка перехода на страницу login
+	r.HandleFunc("/logout", logoutHandler)        // Обработка перехода на страницу logout
 
 	// Запуск сервера на порту 8080
 	fmt.Println("Запуск сервера на http://localhost:80")
