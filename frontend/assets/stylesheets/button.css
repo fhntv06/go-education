@@ -1,0 +1,25 @@
+button,
+.button {
+  background-color: #76cdde;
+  border: none;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 20px;
+  color: #fff;
+  text-decoration: none;
+  transition: transform .1s ease-in;
+}
+button:disabled {
+  background-color: #8ab3bb;
+  cursor: default;
+  transition: background-color .5s ease-out;
+}
+
+button:hover:not(:disabled),
+button:active:not(:disabled),
+button:focus:not(:disabled),
+.button:hover:not(:disabled),
+.button:active:not(:disabled),
+.button:focus:not(:disabled) {
+  transform: scale(.97);
+}
