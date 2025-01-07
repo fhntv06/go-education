@@ -4,13 +4,45 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
+func GetEnvParam(key string) string {
+	param := os.Getenv(key)
+
+	if key != "PASSWORD" && param == "" {
+		log.Fatalf("Missing required environment variable: %s!", key)
+	}
+
+	return param
+}
+
+func GetConnectionParams() string {
+	// Загружаем переменные из файла .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	return fmt.Sprintf(
+		"%s:%s@(%s:%s)/%s?%s",
+		GetEnvParam("USER"),
+		GetEnvParam("PASSWORD"),
+		GetEnvParam("IP"),
+		GetEnvParam("PORT"),
+		GetEnvParam("DATABASE"),
+		GetEnvParam("PARAMS"),
+	)
+}
+
 func main() {
-	db, err := sql.Open("mysql", "root:root@(127.0.0.1:3306)/root?parseTime=true")
+	connectionParams := GetConnectionParams()
+
+	db, err := sql.Open("mysql", connectionParams)
 	if err != nil {
 		log.Fatal(err)
 	}
