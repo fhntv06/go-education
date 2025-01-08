@@ -1,11 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	_ "github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -15,16 +17,21 @@ import (
 )
 
 type User struct {
-	Username    string
-	Email       string
-	Password    string
-	ConfirmPass string
+	username    string
+	email       string
+	password    string
+	confirmpass string
 }
 type ErrorResponse struct {
 	ID   string `json:"id"`
 	Text string `json:"text"`
 	Type string `json:"type"`
 }
+type DB struct {
+	DB *sql.DB
+}
+
+var globalDB *sql.DB
 
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
@@ -58,7 +65,7 @@ func loggingCreateUser(user User) {
 	timeStr := fmt.Sprintf("%s %s", now.Format("15:04:05"), now.Format("02-01-2006"))
 	userLog := fmt.Sprintf(
 		"--> Создан новый пользователь:\n\tDate: %s,\n\tUsername: %s,\n\tEmail: %s,\n\tPassword: %s\n--------------------------\n",
-		timeStr, user.Username, user.Email, user.Password,
+		timeStr, user.username, user.email, user.password,
 	)
 
 	// Получаем текущую рабочую директорию (проекта)
@@ -84,57 +91,61 @@ func loggingCreateUser(user User) {
 }
 
 func handleRegistration(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		// Получаем данные из формы
-		username := r.FormValue("username")
-		email := r.FormValue("email")
-		password := r.FormValue("password")
-		confirmPassword := r.FormValue("confirm_password")
+	// Получаем данные из формы
+	username := r.FormValue("username")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	confirmPassword := r.FormValue("confirm_password")
 
-		// Проверяем, что пароли совпадают
-		if password != confirmPassword {
-			errorResponse := &ErrorResponse{ID: "confirm_password", Text: "Пароли не совпадают", Type: "error"}
-			sendJSONResponse(w, errorResponse, http.StatusBadRequest)
-			return
-		}
-
-		// Простая валидация
-		// Имя пользователя
-		if len(username) == 0 {
-			errorResponse := &ErrorResponse{ID: "username", Text: "Некорректные данные. Проверьте поле username.", Type: "error"}
-			sendJSONResponse(w, errorResponse, http.StatusBadRequest)
-			return
-		}
-		// Пароль
-		if len(password) < 6 {
-			errorResponse := &ErrorResponse{ID: "password", Text: "Пароль слишком короткий. Минимум 6 символов.", Type: "error"}
-			sendJSONResponse(w, errorResponse, http.StatusBadRequest)
-			return
-		}
-		// Email
-		if !strings.Contains(email, "@") {
-			errorResponse := &ErrorResponse{ID: "email", Text: "Некорректные данные. Проверьте поле Email.", Type: "error"}
-			sendJSONResponse(w, errorResponse, http.StatusBadRequest)
-			return
-		}
-
-		// Создаем нового пользователя
-		user := User{
-			Username: username,
-			Email:    email,
-			Password: password, // В реальном приложении следует хранить только хэш пароля
-		}
-
-		// логирование новых пользователей
-		loggingCreateUser(user)
-
-		// Выводим сообщение об успешной регистрации
-		successResponse := &ErrorResponse{Text: "Пользователь " + user.Username + " зарегистрирован!", Type: "success"}
-		sendJSONResponse(w, successResponse, http.StatusCreated)
-	} else {
-		// Если метод не POST, показываем форму
-		fmt.Fprintf(w, "<h1>Метод не POST!</h1>")
+	// Проверяем, что пароли совпадают
+	if password != confirmPassword {
+		errorResponse := &ErrorResponse{ID: "confirm_password", Text: "Пароли не совпадают", Type: "error"}
+		sendJSONResponse(w, errorResponse, http.StatusBadRequest)
+		return
 	}
+
+	// Простая валидация
+	// Имя пользователя
+	if len(username) == 0 {
+		errorResponse := &ErrorResponse{ID: "username", Text: "Некорректные данные. Проверьте поле username.", Type: "error"}
+		sendJSONResponse(w, errorResponse, http.StatusBadRequest)
+		return
+	}
+	// Пароль
+	if len(password) < 6 {
+		errorResponse := &ErrorResponse{ID: "password", Text: "Пароль слишком короткий. Минимум 6 символов.", Type: "error"}
+		sendJSONResponse(w, errorResponse, http.StatusBadRequest)
+		return
+	}
+	// Email
+	if !strings.Contains(email, "@") {
+		errorResponse := &ErrorResponse{ID: "email", Text: "Некорректные данные. Проверьте поле Email.", Type: "error"}
+		sendJSONResponse(w, errorResponse, http.StatusBadRequest)
+		return
+	}
+
+	// Создаем нового пользователя
+	user := User{username, email, password, confirmPassword}
+
+	// логирование новых пользователей
+	loggingCreateUser(user)
+
+	// Insert a new user
+	CreateUser(username, email, password, time.Now())
+
+	// Выводим сообщение об успешной регистрации
+	successResponse := &ErrorResponse{Text: "Пользователь " + username + " зарегистрирован!", Type: "success"}
+	sendJSONResponse(w, successResponse, http.StatusCreated)
+}
+
+func GetEnvParam(key string) string {
+	param := os.Getenv(key)
+
+	if key != "PASSWORD" && param == "" {
+		log.Fatalf("Missing required environment variable: %s!", key)
+	}
+
+	return param
 }
 
 // Функция для определения Content-Type по расширению файла
@@ -213,7 +224,67 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join("..", "frontend", "logout.html")) // конкатенация с учетом OS
 }
 
-func main() {
+// TODO: дописать процессы
+// ++ 1) Пользователь регистрируется -> register + заносим в базу данные пользователя
+// 2) * Пользователь после регистрации попадает в свой аккаунт => редирект после получения данных с сервера об успешной регистрации
+// 3) * В аккаунте видны данных пользователя => на страницу добавить прелоадер + по загрузке данных (REST API + slug) вывести на страницу
+// 4) * Пользователь выходит из аккаунта (кнопка "Выйти") и
+//	=> при нажатии на "Выйти" идет запрос => убирается сессия => приходит ответ success
+//	=> редирект на страницу logout
+// 5) * Перенаправление пользователя после таймера 5 сек с logout на страницу login (переход реализован на js)
+// 6) * Пользователь авторизуется
+//	=> при нажатии на "Войти" идет запрос => создается сессия => приходит ответ success
+//	=> редирект на страницу account
+
+// * прежде починить роутинг чтобы подгрузился build
+
+// ConstructorDB
+
+func ConstructorDB(paramsDB string) {
+	dbLocal, err := sql.Open("mysql", paramsDB)
+	if err != nil {
+		log.Fatal("Error in Open: ", err)
+	}
+	if err := dbLocal.Ping(); err != nil {
+		log.Fatal("Error in Ping: ", err)
+	}
+
+	globalDB = dbLocal
+}
+func CreateUser(username string, email string, password string, createdAt time.Time) sql.Result {
+	if globalDB == nil {
+		log.Fatal("Ошибка: globalDB пуста!")
+	}
+
+	result, err := globalDB.Exec(
+		`INSERT INTO users (username, email, password, created_at) VALUES (?, ?, ?, ?)`,
+		username, email, password, createdAt,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return result
+}
+func CreateNewTables(name string) {
+	query := fmt.Sprintf(
+		`CREATE TABLE IF NOT EXISTS %s (
+			id INT AUTO_INCREMENT,
+			username TEXT NOT NULL,
+			email TEXT NOT NULL,
+			password TEXT NOT NULL,
+			created_at DATETIME,
+			PRIMARY KEY (id)
+		);`,
+		name,
+	)
+
+	if _, err := globalDB.Exec(query); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initialRouting() *mux.Router {
 	// Обработчики маршрутов
 	r := mux.NewRouter()
 
@@ -244,16 +315,47 @@ func main() {
 		fmt.Fprintf(w, "You've requested the book: %s on page %s\n", title, page)
 	})
 
-	r.HandleFunc("/register", handleRegistration) // Обработка формы регистрации
-	r.HandleFunc("/account", accountHandler)      // Обработка перехода на страницу account
-	r.HandleFunc("/login", loginHandler)          // Обработка перехода на страницу login
-	r.HandleFunc("/logout", logoutHandler)        // Обработка перехода на страницу logout
+	r.HandleFunc("/register", handleRegistration).Methods("POST") // Обработка формы регистрации
+	r.HandleFunc("/account", accountHandler)                      // Обработка перехода на страницу account
+	r.HandleFunc("/login", loginHandler)                          // Обработка перехода на страницу login
+	r.HandleFunc("/logout", logoutHandler)                        // Обработка перехода на страницу logout
+
+	return r
+}
+func initialServer() {
+	r := initialRouting()
 
 	// Запуск сервера на порту 8080
 	fmt.Println("Запуск сервера на http://localhost:80")
 	if err := http.ListenAndServe(":80", r); err != nil {
 		fmt.Println("Ошибка при запуске сервера:", err)
 	}
+}
+func initialDatabase() {
+	// Загружаем переменные из файла .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	connectionParamsDB := fmt.Sprintf(
+		"%s:%s@(%s:%s)/%s?%s",
+		GetEnvParam("USER"),
+		GetEnvParam("PASSWORD"),
+		GetEnvParam("IP"),
+		GetEnvParam("PORT"),
+		GetEnvParam("DATABASE"),
+		GetEnvParam("PARAMS"),
+	)
+
+	// ConstructorDB
+	ConstructorDB(connectionParamsDB)
+	CreateNewTables("users")
+}
+
+func main() {
+	initialDatabase()
+	initialServer()
 }
 
 // моменты
