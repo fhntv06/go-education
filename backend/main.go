@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"os"
@@ -84,10 +85,38 @@ func loggingCreateUser(user User) {
 	// Записываем сформированную строку в файл
 	_, err = file.WriteString(userLog)
 	if err != nil {
-		log.Fatalf("Не удалось записать данные в файл: %v", err)
+		log.Fatalf("Не удалось записать данные в файл логов: %v", err)
 	}
 
 	fmt.Println("Добавлен новый пользователь!")
+}
+func loggingError(err error) {
+	now := time.Now()
+
+	// Форматируем время в нужный формат
+	timeStr := fmt.Sprintf("%s %s", now.Format("15:04:05"), now.Format("02-01-2006"))
+	userLog := fmt.Sprintf("--> Новая ошибка:\n\tDate: %s\n\tError: %s\n--------------------------\n", timeStr, err)
+
+	// Получаем текущую рабочую директорию (проекта)
+	currentDir, err := os.Getwd()
+
+	// Формируем полный путь до файла лога
+	logPath := filepath.Join(currentDir, "log.txt")
+
+	// Открываем файл для записи (или создаем новый, если его нет) и добавляем данные в конец
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatalf("Не удалось открыть файл: %v", err)
+	}
+	defer file.Close()
+
+	// Записываем сформированную строку в файл
+	_, err = file.WriteString(userLog)
+	if err != nil {
+		log.Fatalf("Не удалось записать данные в файл логов ошибки: %v", err)
+	}
+
+	fmt.Println("Возникла ошибка в backend! Проверьте логи!")
 }
 
 func handleRegistration(w http.ResponseWriter, r *http.Request) {
@@ -97,8 +126,23 @@ func handleRegistration(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	confirmPassword := r.FormValue("confirm_password")
 
+	hashPassword, errPassword := HashPassword(password)
+	hashConfirmPassword, errConfirmPassword := HashPassword(confirmPassword)
+
+	if errPassword != nil || errConfirmPassword != nil {
+		if errConfirmPassword != nil {
+			loggingError(errConfirmPassword)
+		} else {
+			loggingError(errPassword)
+		}
+
+		errorResponse := &ErrorResponse{ID: "confirm_password", Text: "Ошибка проверки паролей на сервере!", Type: "error"}
+		sendJSONResponse(w, errorResponse, http.StatusInternalServerError)
+		return
+	}
+
 	// Проверяем, что пароли совпадают
-	if password != confirmPassword {
+	if hashPassword != hashConfirmPassword {
 		errorResponse := &ErrorResponse{ID: "confirm_password", Text: "Пароли не совпадают", Type: "error"}
 		sendJSONResponse(w, errorResponse, http.StatusBadRequest)
 		return
@@ -125,13 +169,13 @@ func handleRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Создаем нового пользователя
-	user := User{username, email, password, confirmPassword}
+	user := User{username, email, hashPassword, hashConfirmPassword}
 
 	// логирование новых пользователей
 	loggingCreateUser(user)
 
 	// Insert a new user
-	CreateUser(username, email, password, time.Now())
+	CreateUser(username, email, hashPassword, time.Now())
 
 	// Выводим сообщение об успешной регистрации
 	successResponse := &ErrorResponse{Text: "Пользователь " + username + " зарегистрирован!", Type: "success"}
@@ -351,6 +395,16 @@ func initialDatabase() {
 	// ConstructorDB
 	ConstructorDB(connectionParamsDB)
 	CreateNewTables("users")
+}
+
+// Hashing password
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
 
 func main() {
