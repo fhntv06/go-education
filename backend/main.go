@@ -183,6 +183,8 @@ func handleRegistration(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetEnvParam(key string) string {
+	// получаем СИСТЕМНЫЕ ПЕРЕМЕННЫЕ
+	// если key определен в системе ранее, то его значение будет не корректо относительно вашего файла .env
 	param := os.Getenv(key)
 
 	if key != "PASSWORD" && param == "" {
@@ -377,7 +379,7 @@ func initialServer() {
 }
 func initialDatabase() {
 	// Загружаем переменные из файла .env
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
